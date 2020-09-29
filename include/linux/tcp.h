@@ -407,6 +407,7 @@ struct tcp_sock {
 	 */
 	struct request_sock __rcu *fastopen_rsk;
 	u32	*saved_syn;
+	u32	pollout_window_min_len;
 };
 
 enum tsq_enum {

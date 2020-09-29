@@ -489,6 +489,12 @@ static inline bool tcp_stream_is_readable(const struct tcp_sock *tp,
 	return false;
 }
 
+static inline bool tcp_stream_window_has_space(const struct tcp_sock *tp, struct sock *sk)
+{
+	u64 window_space = (tp->snd_cwnd - sk->sk_ack_backlog) * tp->mss_cache;
+	return (window_space >= tp->pollout_window_min_len);
+}
+
 /*
  *	Wait for a TCP event.
  *
@@ -562,7 +568,10 @@ __poll_t tcp_poll(struct file *file, struct socket *sock, poll_table *wait)
 			mask |= EPOLLIN | EPOLLRDNORM;
 
 		if (!(sk->sk_shutdown & SEND_SHUTDOWN)) {
-			if (sk_stream_is_writeable(sk)) {
+			//if (sk_stream_is_writeable(sk)) {
+			if (tp->pollout_window_min_len > 0 && tcp_stream_window_has_space(tp, sk) && sk_stream_is_writeable(sk)) {
+				mask |= EPOLLOUT | EPOLLWRNORM;
+			} else if (tp->pollout_window_min_len == 0 && sk_stream_is_writeable(sk)) {
 				mask |= EPOLLOUT | EPOLLWRNORM;
 			} else {  /* send SIGIO later */
 				sk_set_bit(SOCKWQ_ASYNC_NOSPACE, sk);
@@ -3314,6 +3323,12 @@ static int do_tcp_setsockopt(struct sock *sk, int level, int optname,
 		if (val)
 			tcp_enable_tx_delay();
 		tp->tcp_tx_delay = val;
+		break;
+	case TCP_POLLOUT_WIN_LEN:
+		if (val < 0)
+			err = -EINVAL;
+		else
+			tp->pollout_window_min_len = val;
 		break;
 	default:
 		err = -ENOPROTOOPT;

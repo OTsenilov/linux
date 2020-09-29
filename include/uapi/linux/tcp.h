@@ -124,8 +124,9 @@ enum {
 #define TCP_FASTOPEN_NO_COOKIE	34	/* Enable TFO without a TFO cookie */
 #define TCP_ZEROCOPY_RECEIVE	35
 #define TCP_INQ			36	/* Notify bytes available to read as a cmsg on read */
+#define TCP_POLLOUT_WIN_LEN	37
 
-#define TCP_CM_INQ		TCP_INQ
+#define TCP_CM_INQ		TCP_POLLOUT_WIN_LEN
 
 #define TCP_TX_DELAY		37	/* delay outgoing packets by XX usec */
 
